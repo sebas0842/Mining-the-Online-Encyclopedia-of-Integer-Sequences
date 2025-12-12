@@ -1,0 +1,14 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Local data / large files
+data/
+*.db
+stripped
+
+# macOS
+.DS_Store
+
