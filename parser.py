@@ -1,3 +1,4 @@
+from __future__ import annotations
 from typing import Iterator, Tuple, Optional, Callable
 import logging
 from utils import is_valid_terms, normalize_terms
@@ -50,3 +51,45 @@ def parse_oeis_file(
 
             terms = normalize_terms(terms)
             yield seq_id, terms, ""
+
+def parse_names_file(filepath: str = "names",
+on_skip: Optional[Callable[[int, str, str], None]] = None) -> Iterator[Tuple[str, str]]:
+    """
+    Parses OEIS names file. Yields (seq_id, name).
+    on_skip: optional callback called as on_skip(line_number, seq_id_or_empty, raw_line)
+    """
+
+    with open(filepath, "r", encoding="utf-8", errors = "replace") as f:
+
+        for ln, raw in enumerate(f, start = 1):
+
+            line = raw.strip()
+
+            if not line or not line.startswith("A"):
+
+                if on_skip: on_skip(ln, "", raw)
+                continue
+
+            if not line.startswith("A"):
+                
+                if on_skip: on_skip(ln, "", raw)
+                continue
+
+            parts = line.split(" ", 1)
+
+            if len(parts) < 2:
+
+                logging.warning("Skipping malformed line %d (no space after ID): %r", ln, raw[:120])
+                if on_skip: on_skip(ln, parts[0] if parts else "", raw)
+                continue
+
+            seq_id = parts[0].strip()
+            name = parts[1].strip()
+
+            if not seq_id or not name:
+                
+                logging.warning("Skipping malformed line %d (empty ID or name): %r", ln, raw[:120])
+                if on_skip: on_skip(ln, seq_id, raw)
+                continue
+
+            yield seq_id, name

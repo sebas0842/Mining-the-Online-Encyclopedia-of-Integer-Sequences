@@ -48,7 +48,16 @@ def fetch_sequence(conn: sqlite3.Connection, seq_id: str) -> Tuple[str, str, str
     cur = conn.cursor() # cursor
     row = cur.execute(
 
-        "Select id, name, terms FROM sequences WHERE id = ?", (seq_id,)
+        """
+        SELECT
+            s.id,
+            COALESCE(m.name, '') AS name,
+            s.terms
+        FROM sequences AS s
+        LEFT JOIN metadata AS m
+            ON m.id = s.id
+        WHERE s.id = ?
+        """, (seq_id,)
 
     ).fetchone()
 
@@ -76,9 +85,13 @@ def fetch_candidate_sequences_by_prefix(
         rows = cur.execute(
 
             """
-            SELECT id, name, terms FROM sequences
-            WHERE terms = ?
-                OR terms LIKE ?
+            SELECT 
+                s.id,
+                COALESCE(m.name, '') AS name,
+                s.terms
+            FROM sequences AS s
+            LEFT JOIN metadata AS m ON s.id = m.id
+            WHERE s.terms = ? OR s.terms LIKE ?
             LIMIT ?
             """, (prefix_csv, like_pattern, limit)
 

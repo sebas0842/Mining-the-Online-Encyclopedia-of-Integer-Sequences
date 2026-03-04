@@ -106,3 +106,30 @@ def find_by_terms_prefix(conn: sqlite3.Connection, prefix_csv: str, limit: int =
         (eq, like, limit)
     )
     return cur.fetchall()
+
+
+def init_metadata_table(conn: sqlite3.Connection) -> None:
+
+    cur = conn.cursor()
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS metadata (
+            id TEXT PRIMARY KEY,
+            name TEXT
+        )
+    """)
+    cur.execute("CREATE INDEX IF NOT EXISTS idx_metadata_id ON metadata(id);")
+    conn.commit()
+
+def upsert_names(conn: sqlite3.Connection, rows: list[tuple[str, str]]) -> int:
+    
+    """
+    rows: list of (id, name)
+    Returns number of rows written (attempted).
+    """
+    cur = conn.cursor()
+    cur.executemany("""
+        INSERT INTO metadata (id, name)
+        VALUES (?, ?)
+        ON CONFLICT(id) DO UPDATE SET name=excluded.name
+    """, rows)
+    return len(rows)
